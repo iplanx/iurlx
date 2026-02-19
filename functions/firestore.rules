@@ -1,0 +1,284 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    function isOwner() {
+      return request.auth.uid == resource.data.get('ownerId', null) || (request.method in ['create', 'update'] && request.resource.data.get('ownerId', null) == request.auth.uid);
+    }
+
+    function isEntityOwner() {
+      return request.auth.uid == resource.data.recipientOwnerId || (request.resource != null && request.auth.uid == request.resource.data.recipientOwnerId);
+    }
+
+    function isVendorOwner(vendorId) {
+      return request.auth.uid == get(/databases/$(database)/documents/vendors/$(vendorId)).data.ownerId;
+    }
+
+    function isEventOwner(eventId) {
+      return request.auth.uid == get(/databases/$(database)/documents/events/$(eventId)).data.ownerId;
+    }
+
+    function isChatMember(chatId) {
+      return request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.authorizedUid;
+    }
+
+    function isChatOwner(chatId) {
+      return request.auth.uid == resource.data.ownerId || request.auth.uid == get(/databases/$(database)/documents/chats/$(chatId)).data.ownerId;
+    }
+
+    function getUserManagingVendorIds() {
+      let data = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      return 'managingVendorIds' in data ? data.managingVendorIds : [];
+    }
+
+    function visibility(visibilityStatus) {
+      return resource.data.visibility == visibilityStatus || (request.resource != null && request.resource.data.visibility == visibilityStatus);
+    }
+
+    match /events/{eventId} {
+    	allow read: if visibility('Public');
+      allow read: if request.auth!= null && (isOwner() || isAdmin() || request.auth.uid in resource.data.authorizedUids);
+      allow read: if request.auth!= null && (request.auth.uid in resource.data.collaboratorIdsAndUids);
+      allow read: if request.auth != null && resource.data.collaboratorIdsAndUids.hasAny(getUserManagingVendorIds());
+      allow create, update, delete: if false;
+
+      match /followers/{followerId} {
+        allow create: if request.auth!= null;
+        allow read, update, delete: if request.auth!= null && (isOwner() || isAdmin());
+      }
+      
+      match /managers/{managerId} {
+        allow read, write: if request.auth!= null && (isOwner() || isAdmin());
+      }
+
+      match /guests/{guestId} {
+          allow read: if request.auth != null && (
+            request.auth.uid == resource.data.ownerId ||
+            request.auth.uid == resource.data.promoterOwnerId ||
+            isEventOwner(eventId) ||
+            isAdmin()
+            );
+          allow create, update, delete: if false;
+      }
+
+      match /ticketLinkAudiences/{leadId} {
+        allow read: if request.auth != null && (
+          isEventOwner(eventId) ||
+          isAdmin()
+        );
+        allow create, update, delete: if false;
+      }
+
+      match /settings/{settingId} {
+        allow read: if true;
+        allow create,update,delete: if request.auth!= null && 
+        (request.auth.uid == get(/databases/$(database)/documents/events/$(eventId)).data.ownerId ||
+        isAdmin()
+        );
+      }
+
+      match /tickets/{ticketId} {
+        allow read: if true;
+        allow create: if request.auth != null && isEventOwner(eventId);
+        allow update, delete: if request.auth != null && isEventOwner(eventId);
+      }
+
+      match /ticketSales/{saleId} {
+        allow read: if true;
+        allow create, update, delete: if request.auth != null && (isEventOwner(eventId) || isAdmin());
+      }
+
+      match /promotions/{promotionId} {
+        allow read, create, update, delete: if request.auth != null && isEventOwner(eventId);
+      }
+      
+      match /raffles/{raffleId} {
+        allow read: if true;
+        allow write: if false;
+
+        match /entries/{entryId} {
+          allow read: if request.auth != null && (isOwner() || isEventOwner(eventId) || isAdmin());
+          allow write: if false;
+        }
+      }
+    }
+
+    match /leads/{leadId} {
+      allow create: if true;
+      allow read, update: if request.auth!= null && (isEntityOwner() || isAdmin());
+      allow read, update: if request.auth!= null && (isOwner() || isAdmin());
+      allow delete: if request.auth!= null && isAdmin();
+    }
+
+    match /vendorusernames/{usernameId} {
+      allow create, read: if request.auth!= null;
+      allow update, delete: if false;
+    }
+
+    match /audience/{audienceId} {
+      allow read, create, update, delete: if request.auth != null && isAdmin();
+
+      match /locationHistory/{locationHistoryId} {
+        allow read, create, update, delete: if request.auth != null && isAdmin();
+      }
+    }
+
+    match /vendors/{vendorId} {
+    	allow read: if true;
+      allow create, update, delete: if false;
+
+      match /notifications/{notificationId} {
+        allow read, delete: if request.auth!= null && ( isOwner() || isAdmin());
+        allow create, update: if request.auth!= null;
+      }
+
+      match /highlights/{highlightId} {
+        allow read: if true;
+        allow delete, create, update: if false;
+      }
+
+      match /vendorCollaborators/{collaboratorId} {
+        allow create: if true; // public
+        allow read: if request.auth!= null && (isOwner() || isAdmin() || isVendorOwner(vendorId));
+        allow update,delete: if false;
+      }
+
+      match /services/{serviceId} {
+        allow read: if true;
+        allow create: if request.auth!= null && (isAdmin() || isVendorOwner(vendorId));
+        allow delete, update: if request.auth!= null && (isOwner() || isAdmin() || isVendorOwner(vendorId));
+      }
+
+      match /packages/{packageId} {
+        allow read: if true;
+        allow create: if request.auth!= null && (isVendorOwner(vendorId) || isAdmin());
+        allow delete, update: if request.auth!= null && (isOwner() || isAdmin() || isVendorOwner(vendorId));
+      }
+
+      match /given_endorsements/{endorsementId} {
+        allow read: if true;
+        allow create, update, delete: if false;
+      }
+
+      match /received_endorsements/{endorsementId} {
+        allow read: if true;
+        allow create, update, delete: if false;
+      }
+
+      match /followers/{followerId} {
+        allow create: if request.auth!= null;
+        allow read, update, delete: if request.auth!= null && (isOwner() || isVendorOwner(vendorId) || isAdmin());
+      }
+      
+      match /managers/{managerId} {
+        allow read, write: if request.auth!= null && (isOwner() || isAdmin());
+      }
+
+      match /settings/{settingId} {
+        allow read: if true;
+        allow create,update,delete: if request.auth!= null && 
+        (request.auth.uid == get(/databases/$(database)/documents/vendors/$(vendorId)).data.ownerId ||
+        isAdmin()
+        );
+      }
+
+      match /audience/{audienceId} {
+        allow read, create, update, delete: if request.auth != null && (isOwner() || isAdmin() || isVendorOwner(vendorId));
+      }
+
+      match /raffles/{raffleId} {
+        allow read: if true;
+        allow write: if false;
+
+        match /entries/{entryId} {
+          allow read: if request.auth != null && (isOwner() || isVendorOwner(vendorId) || isAdmin());
+          allow write: if false;
+        }
+      }
+    }
+    match /users/{userId} {
+    	allow read: if true;
+      allow create: if request.auth!= null;
+      allow delete, update: if request.auth!= null && ( isOwner() || isAdmin());
+      
+      function isNotifier() {
+        return request.auth.uid == resource.data.get('notifier', {}).get('id', null) || (request.method in ['create', 'update'] && request.resource.data.get('notifier', {}).get('id', null) == request.auth.uid);
+      }
+
+      match /notifications/{notificationId} {
+        allow read, update: if request.auth!= null && ( isOwner() || isNotifier() || isAdmin());
+        allow delete: if request.auth!= null && ( isOwner() || isAdmin());
+      }
+
+      match /followings/{followingId} {
+        allow create, read, update, delete: if request.auth!= null && (isOwner() || isAdmin());
+      }
+
+      match /orders/{orderId} {
+        allow create, read, update, delete: if request.auth!= null && (isOwner() || isAdmin());
+      }
+    }
+    match /chats/{chatId} {
+      allow create: if request.auth!= null;
+    	allow read: if request.auth!= null && request.auth.uid in resource.data.authorizedUid;
+      allow delete, update: if request.auth!= null && ( isChatOwner(chatId) || isAdmin());
+      match /messages/{messageId}/{document=**}  {
+        allow create, read: if request.auth!= null && isChatMember(chatId);
+        allow update: if request.auth!= null && resource.data.ownerId == request.auth.uid;
+        allow delete: if request.auth!= null && isAdmin();
+      }
+    }
+
+    match /applicants/{applicantId} {
+      allow create: if true;
+      allow read, update, delete: if request.auth!= null && isAdmin();
+    }
+
+    match /contactRequests/{requestId} {
+      allow create: if true;
+      allow read, update, delete: if request.auth!= null && isAdmin();
+    }
+
+    match /support/{supportId} {
+      allow create: if true;
+      allow read, update, delete: if request.auth!= null && isAdmin();
+    }
+
+    // Stripe data organized by account: stripe/{accountId}/...
+    match /stripe/{accountId}/customers/{uid} {
+      // Only the customer themselves can read their customer doc and related checkout sessions/payments/subscriptions
+      allow read: if request.auth.uid == uid;
+
+      match /checkout_sessions/{id} {
+        allow read, write: if request.auth.uid == uid;
+      }
+      match /subscriptions/{id} {
+        allow read: if request.auth.uid == uid;
+      }
+      match /payments/{id} {
+        allow read: if request.auth.uid == uid;
+      }
+      match /invoices/{id} {
+        allow read: if request.auth.uid == uid;
+      }
+    }
+
+
+    match /stripe/{accountId}/products/{id} {
+      // Products/prices/tax rates are publicly readable
+      allow read: if true;
+
+      match /prices/{id} {
+        allow read: if true;
+      }
+
+      match /tax_rates/{id} {
+        allow read: if true;
+      }
+    }
+    
+  }
+}
