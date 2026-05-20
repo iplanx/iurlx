@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "iplanx-staging"
+    "default": "iplanx-bb47f",
+    "staging": "iplanx-staging",
+    "prod": "iplanx-bb47f"
   }
 }
