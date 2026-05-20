@@ -56,13 +56,6 @@ if (
 	connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
 	connectFirestoreEmulator(db, "127.0.0.1", 8080);
 } else {
-	// Enable App Check for Staging and Production
-	if (environment === "STAGING" || process.env.REACT_APP_APPCHECK_DEBUG_TOKEN) {
-		// eslint-disable-next-line no-restricted-globals
-		(self as any).FIREBASE_APPCHECK_DEBUG_TOKEN =
-			process.env.REACT_APP_APPCHECK_DEBUG_TOKEN || true;
-	}
-
 	initializeAppCheck(app, {
 		provider: new ReCaptchaV3Provider(
 			"6LeNZ_MsAAAAAKEVs8T3dLL4LdB1lZ8-qd0ndAoh",
