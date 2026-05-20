@@ -30,13 +30,13 @@ const firebaseProdConfig = {
 };
 
 const firebaseStagingConfig = {
-	apiKey: "AIzaSyABwUSzQRSOSIbp_ioVBDeeaE3WJ1Fmw3M",
+	apiKey: "AIzaSyCUXtQyM5UAjp4-LK1zWfCWByQOkiHAguE",
 	authDomain: "iplanx-staging.firebaseapp.com",
 	projectId: "iplanx-staging",
 	storageBucket: "iplanx-staging.firebasestorage.app",
 	messagingSenderId: "868603122159",
-	appId: "1:868603122159:web:c966dd89e74d854a0d661a",
-	measurementId: "G-RP62SSEM79",
+	appId: "1:868603122159:web:75ec20ed3aa546920d661a",
+	measurementId: "G-561XRS2L1S",
 };
 
 // Similar to iplanxwebsite, PROD environment uses firebaseProdConfig, otherwise uses firebaseStagingConfig
