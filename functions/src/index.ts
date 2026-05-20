@@ -7,9 +7,32 @@
  * See a full list of supported triggers at https://firebase.google.com/docs/functions
  */
 
+import * as logger from "firebase-functions/logger";
+
+process.on("uncaughtException", (err) => {
+  logger.error("GLOBAL UNCAUGHT EXCEPTION:", err, err?.stack);
+});
+process.on("unhandledRejection", (reason, promise) => {
+  logger.error("GLOBAL UNHANDLED REJECTION AT:", promise, "REASON:", reason, (reason as any)?.stack);
+});
+
+try {
+  const firebaseFunctions = require("firebase-functions");
+  let currentConfig = () => ({});
+  Object.defineProperty(firebaseFunctions, "config", {
+    get: () => currentConfig,
+    set: (val) => {
+      currentConfig = val;
+    },
+    configurable: true,
+    enumerable: true,
+  });
+} catch (e) {
+  logger.error("Failed to mock functions.config() getter/setter:", e);
+}
+
 import {setGlobalOptions} from "firebase-functions";
 import {onRequest, onCall, HttpsError} from "firebase-functions/v2/https";
-import * as logger from "firebase-functions/logger";
 import {initializeApp} from "firebase-admin/app";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
 import {
@@ -33,10 +56,10 @@ setGlobalOptions({ maxInstances: 10 });
  * Increments the access count and redirects to the original URL.
  */
 export const redirectUrl = onRequest(async (req, res) => {
-  // Extract shortPath from the path (e.g., /s/my-path -> my-path)
+  // Extract shortPath from the path (e.g., /my-path -> my-path)
   const pathParts = req.path.split("/").filter((p) => p !== "");
   
-  // Assuming the rewrite routes to /s/:shortPath or we are at the root
+  // Assuming the rewrite routes directly to the short path
   const shortPath = pathParts[pathParts.length - 1];
 
   if (!shortPath) {
@@ -47,30 +70,26 @@ export const redirectUrl = onRequest(async (req, res) => {
   try {
     const redirectRef = db.collection("urlRedirects").doc(shortPath);
     
-    // Use a transaction to ensure atomic read and write
-    const originalUrl = await db.runTransaction(async (transaction) => {
-      const doc = await transaction.get(redirectRef);
+    // Perform a quick read of the redirection document
+    const docSnap = await redirectRef.get();
 
-      if (!doc.exists) {
-        return null;
-      }
-
-      const data = doc.data() as UrlRedirect;
-      
-      // Increment count
-      transaction.update(redirectRef, {
-        count: FieldValue.increment(1),
-        updatedAt: FieldValue.serverTimestamp(),
-      });
-
-      return data.originalUrl;
-    });
-
-    if (!originalUrl) {
+    if (!docSnap.exists) {
       logger.info(`Redirect not found for path: ${shortPath}`);
       res.status(404).send("Not Found: The shortened URL does not exist.");
       return;
     }
+
+    const data = docSnap.data() as UrlRedirect;
+    const originalUrl = data.originalUrl;
+
+    // Increment click count asynchronously to deliver the fastest redirect response to the user.
+    // Native FieldValue.increment handles high-concurrency updates smoothly without transaction contention.
+    redirectRef.update({
+      count: FieldValue.increment(1),
+      updatedAt: FieldValue.serverTimestamp(),
+    }).catch((err) => {
+      logger.error("Failed to update redirect count:", err);
+    });
 
     logger.info(`Redirecting ${shortPath} to ${originalUrl}`);
     

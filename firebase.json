@@ -1,0 +1,117 @@
+{
+  "firestore": {
+    "database": "(default)",
+    "location": "nam5",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "hosting": [
+    {
+      "site": "iurlx-staging",
+      "public": "app/build",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "/signin",
+          "destination": "/index.html"
+        },
+        {
+          "source": "/signup",
+          "destination": "/index.html"
+        },
+        {
+          "source": "/home",
+          "destination": "/index.html"
+        },
+        {
+          "source": "/x",
+          "destination": "/index.html"
+        },
+        {
+          "source": "/x/**",
+          "destination": "/index.html"
+        },
+        {
+          "source": "**",
+          "function": "redirectUrl"
+        }
+      ]
+    },
+    {
+      "site": "ilinkx",
+      "public": "app/build",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "/signin",
+          "destination": "/index.html"
+        },
+        {
+          "source": "/signup",
+          "destination": "/index.html"
+        },
+        {
+          "source": "/home",
+          "destination": "/index.html"
+        },
+        {
+          "source": "/x",
+          "destination": "/index.html"
+        },
+        {
+          "source": "/x/**",
+          "destination": "/index.html"
+        },
+        {
+          "source": "**",
+          "function": "redirectUrl"
+        }
+      ]
+    }
+  ],
+  "emulators": {
+    "auth": {
+      "port": 9099
+    },
+    "functions": {
+      "port": 5001
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "hosting": {
+      "port": 5005
+    },
+    "ui": {
+      "enabled": true
+    },
+    "singleProjectMode": true
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "disallowLegacyRuntimeConfig": true,
+      "ignore": [
+        "node_modules",
+        ".git",
+        "test",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint",
+        "npm --prefix \"$RESOURCE_DIR\" run build"
+      ]
+    }
+  ]
+}

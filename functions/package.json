@@ -1,23 +1,25 @@
 {
   "name": "functions",
+  "version": "1.0.0",
   "scripts": {
     "lint": "eslint --ext .js,.ts .",
     "build": "tsc",
     "build:watch": "tsc --watch",
     "serve": "npm run build && firebase emulators:start --only functions",
     "shell": "npm run build && firebase functions:shell",
-    "start": "npm run shell",
+    "start": "npm run start",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "test": "jest"
+    "test": "jest",
+    "emulator": "firebase emulators:start --only functions"
   },
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "main": "lib/index.js",
   "dependencies": {
     "firebase-admin": "^13.6.0",
-    "firebase-functions": "^7.0.0"
+    "firebase-functions": "^7.0.5"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

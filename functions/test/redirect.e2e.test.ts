@@ -132,7 +132,7 @@ describe("URL Redirection System E2E", () => {
 
       // Mock request and response
       const req = {
-        path: `/s/${path}`,
+        path: `/${path}`,
         query: {}
       };
       const res = {

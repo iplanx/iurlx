@@ -6,15 +6,20 @@ on:
   push:
     branches:
       - prod
+      - staging
+
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: yarn install && yarn build
-      - uses: FirebaseExtended/action-hosting-deploy@v0
+      - run: yarn install
+      - run: yarn build:${{ github.ref_name }} # Use the environment-specific build script
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_IPLANX_STAGING }}
-          channelId: live
-          projectId: iplanx-staging
+          repoToken: "${{ secrets.GITHUB_TOKEN }}"
+          firebaseServiceAccount: ${{ github.ref_name == 'prod' && secrets.FIREBASE_SERVICE_ACCOUNT_IPLANX_BB47F || secrets.FIREBASE_SERVICE_ACCOUNT_IPLANX_STAGING }}
+          channelId: ${{ github.ref_name == 'prod' && 'live' || 'live' }}
+          projectId: ${{ github.ref_name == 'prod' && format('iplanx-bb47f') || format('iplanx-staging') }}
+          target: ${{ github.ref_name == 'prod' && 'ilinkx' || 'iurlx-staging' }}

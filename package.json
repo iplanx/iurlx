@@ -1,0 +1,22 @@
+{
+  "name": "iurlx-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "app",
+    "functions"
+  ],
+  "scripts": {
+    "emulator": "firebase emulators:start --import=.firebase-local --export-on-exit",
+    "emulator:functions": "firebase emulators:start --only functions",
+    "functions:build": "yarn workspace functions build",
+    "functions:lint": "yarn workspace functions lint",
+    "functions:shell": "yarn workspace functions shell",
+    "app:start": "yarn workspace iurlx start",
+    "app:build": "yarn workspace iurlx build",
+    "build": "yarn build:staging",
+    "build:staging": "yarn workspace iurlx build:staging",
+    "build:prod": "yarn workspace iurlx build:prod",
+    "build:dev": "yarn workspace iurlx build:dev"
+  }
+}
