@@ -57,7 +57,7 @@ const db = getFirestore();
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
 
-setGlobalOptions({maxInstances: 10});
+setGlobalOptions({maxInstances: 10, invoker: "public"});
 
 /**
  * Handle URL redirection based on a short shortened path.

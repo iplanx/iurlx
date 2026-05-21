@@ -845,26 +845,125 @@ p { margin-bottom: 1rem; color: var(--text-secondary); }
     margin-top: 3rem;
   }
 
+  /* Convert links table to modern stacked cards on mobile/tablets */
+  .links-table, 
+  .links-table thead, 
+  .links-table tbody, 
+  .links-table th, 
+  .links-table td, 
+  .links-table tr { 
+    display: block !important; 
+    width: 100% !important;
+  }
+
   .links-table {
-    min-width: 650px;
+    min-width: 0 !important;
+  }
+
+  .links-table thead {
+    display: none !important;
+  }
+
+  .links-table tbody tr {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    padding: 1.25rem !important;
+    transition: all 0.2s ease;
+  }
+
+  .links-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  }
+
+  .links-table td {
+    padding: 0.4rem 0 !important;
+    border-bottom: none !important;
+    text-align: left !important;
+  }
+
+  /* Title & Short URL column */
+  .links-table td:nth-child(1) {
+    font-size: 1.05rem;
+  }
+
+  /* Original URL column */
+  .links-table td:nth-child(2) {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+  }
+
+  /* Clicks column styled as badge with clicks prefix */
+  .links-table td:nth-child(3) {
+    display: flex !important;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .links-table td:nth-child(3)::before {
+    content: 'Clicks:';
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+  }
+
+  /* Actions column with flex alignments */
+  .links-table td:nth-child(4) {
+    display: flex !important;
+    justify-content: flex-start !important;
+    margin-top: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: 0.75rem !important;
+  }
+
+  .action-buttons-cell {
+    justify-content: flex-start !important;
+    width: 100%;
+    gap: 0.75rem;
   }
 
   .links-table-card {
     padding: 1.25rem;
     margin-top: 2rem;
   }
-  .links-table th, .links-table td {
-    padding: 1rem 0.5rem;
-    font-size: 0.85rem;
-  }
+
   .optional-fields {
     grid-template-columns: 1fr;
   }
+
   .hero-section {
     padding: 2rem 1rem;
   }
+
   .container {
     padding: 0 1rem;
+  }
+
+  .nav-links {
+    gap: 0.75rem !important;
+  }
+}
+
+@media (max-width: 540px) {
+  .user-name-text {
+    display: none !important;
+  }
+
+  .user-badge {
+    padding: 0 !important;
+    border-radius: 50% !important;
+    width: 36px !important;
+    height: 36px !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    background: rgba(255, 255, 255, 0.08) !important;
   }
 }
 
@@ -890,11 +989,13 @@ p { margin-bottom: 1rem; color: var(--text-secondary); }
     font-size: 1.75rem;
   }
 
-  .links-table th:nth-child(3),
-  .links-table td:nth-child(3) {
-    display: none; /* Hide clicks column on extremely small devices */
+  .table-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
   }
-  .links-table th:nth-child(1) { width: 55%; }
-  .links-table th:nth-child(2) { width: 30%; }
-  .links-table th:nth-child(4) { width: 15%; }
+
+  .table-header h2 {
+    font-size: 1.25rem;
+  }
 }
