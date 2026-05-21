@@ -1,8 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth';
-import { collection, doc, setDoc, deleteDoc, onSnapshot, query, where, serverTimestamp, getDoc } from 'firebase/firestore';
-import { auth, db } from '../firebase';
+import { auth } from '../firebase';
+import { 
+  LinkData, 
+  subscribeUrlRedirects, 
+  checkShortPathAvailability, 
+  createUrlRedirect, 
+  updateUrlRedirect, 
+  deleteUrlRedirect 
+} from '../services/UrlRedirect';
 import { 
   Link as LinkIcon, 
   ArrowRight, 
@@ -16,14 +23,6 @@ import {
   CaretUp,
   PencilSimple
 } from 'phosphor-react';
-
-interface LinkData {
-  id: string; // The shortPath
-  originalUrl: string;
-  label: string;
-  count: number;
-  createdAt: any;
-}
 
 const Home: React.FC = () => {
   const [url, setUrl] = useState('');
@@ -69,37 +68,17 @@ const Home: React.FC = () => {
     }
 
     setLoadingLinks(true);
-    const q = query(
-      collection(db, 'urlRedirects'),
-      where('ownerId', '==', user.uid)
+    const unsubscribe = subscribeUrlRedirects(
+      user.uid,
+      (fetchedLinks) => {
+        setLinks(fetchedLinks);
+        setLoadingLinks(false);
+      },
+      (err) => {
+        console.error("Error loading links: ", err);
+        setLoadingLinks(false);
+      }
     );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedLinks: LinkData[] = [];
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        fetchedLinks.push({
-          id: docSnap.id,
-          originalUrl: data.originalUrl,
-          label: data.label || '',
-          count: data.count || 0,
-          createdAt: data.createdAt
-        });
-      });
-      
-      // Sort by createdAt descending
-      fetchedLinks.sort((a, b) => {
-        const timeA = a.createdAt?.seconds || 0;
-        const timeB = b.createdAt?.seconds || 0;
-        return timeB - timeA;
-      });
-
-      setLinks(fetchedLinks);
-      setLoadingLinks(false);
-    }, (err) => {
-      console.error("Error loading links: ", err);
-      setLoadingLinks(false);
-    });
 
     return unsubscribe;
   }, [user]);
@@ -148,24 +127,16 @@ const Home: React.FC = () => {
 
     try {
       // Check if custom path is taken
-      const docRef = doc(db, 'urlRedirects', finalSlug);
-      const docSnap = await getDoc(docRef);
-      
-      if (docSnap.exists()) {
+      const isAvailable = await checkShortPathAvailability(finalSlug);
+      if (!isAvailable) {
         setError(`The short path "${finalSlug}" is already taken. Please try another one.`);
         setShortening(false);
         return;
       }
 
       // Write new redirect
-      await setDoc(docRef, {
-        originalUrl: targetUrl,
-        label: label.trim() || targetUrl.replace(/^https?:\/\/(www\.)?/, '').substring(0, 30),
-        count: 0,
-        ownerId: user.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
+      const finalLabel = label.trim() || targetUrl.replace(/^https?:\/\/(www\.)?/, '').substring(0, 30);
+      await createUrlRedirect(finalSlug, targetUrl, finalLabel, user.uid);
 
       // Clear input fields
       setUrl('');
@@ -214,7 +185,7 @@ const Home: React.FC = () => {
     }
 
     try {
-      await deleteDoc(doc(db, 'urlRedirects', shortPath));
+      await deleteUrlRedirect(shortPath);
       setToast('Link deleted successfully.');
       setTimeout(() => setToast(''), 3000);
     } catch (err: any) {
@@ -257,42 +228,18 @@ const Home: React.FC = () => {
     setUpdating(true);
 
     try {
-      const isSlugChanged = cleanSlug !== editingLink.id;
+      const finalLabel = editLabel.trim() || targetUrl.replace(/^https?:\/\/(www\.)?/, '').substring(0, 30);
+      const ownerId = user?.uid || editingLink.id; // Fallback to doc id if user object is not fully populated
 
-      if (isSlugChanged) {
-        // If slug changed, verify new slug isn't already taken
-        const docRef = doc(db, 'urlRedirects', cleanSlug);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setEditError(`The short path "${cleanSlug}" is already taken by another link.`);
-          setUpdating(false);
-          return;
-        }
-
-        // Set new document with copy of data + modifications
-        await setDoc(docRef, {
-          originalUrl: targetUrl,
-          label: editLabel.trim() || targetUrl.replace(/^https?:\/\/(www\.)?/, '').substring(0, 30),
-          count: editingLink.count,
-          ownerId: user?.uid || editingLink.id,
-          createdAt: editingLink.createdAt || serverTimestamp(),
-          updatedAt: serverTimestamp()
-        });
-
-        // Delete old document
-        await deleteDoc(doc(db, 'urlRedirects', editingLink.id));
-      } else {
-        // Same slug, just write/overwrite the existing doc ID
-        const docRef = doc(db, 'urlRedirects', editingLink.id);
-        await setDoc(docRef, {
-          originalUrl: targetUrl,
-          label: editLabel.trim() || targetUrl.replace(/^https?:\/\/(www\.)?/, '').substring(0, 30),
-          count: editingLink.count,
-          ownerId: user?.uid || editingLink.id,
-          createdAt: editingLink.createdAt || serverTimestamp(),
-          updatedAt: serverTimestamp()
-        });
-      }
+      await updateUrlRedirect(
+        editingLink.id,
+        cleanSlug,
+        targetUrl,
+        finalLabel,
+        ownerId,
+        editingLink.count,
+        editingLink.createdAt
+      );
 
       setEditingLink(null);
       setToast('Link updated successfully!');
@@ -353,7 +300,7 @@ const Home: React.FC = () => {
       </nav>
 
       {/* Main hero or dashboard */}
-      <main className="hero-section" style={{ justifyContent: user ? 'flex-start' : 'center', paddingTop: user ? '5rem' : '4rem' }}>
+      <main className={`hero-section ${user ? 'dashboard-mode' : 'landing-mode'}`}>
         <div className="hero-bg-glow"></div>
         
         <div className="container" style={{ maxWidth: '900px' }}>
@@ -370,7 +317,7 @@ const Home: React.FC = () => {
           ) : (
             <>
               {/* Logged out Hero */}
-              <h1 className="animate-fade-in text-gradient" style={{ fontSize: '4rem', letterSpacing: '-1px' }}>
+              <h1 className="hero-title animate-fade-in text-gradient">
                 Build stronger digital connections
               </h1>
               <p className="animate-fade-in delay-1" style={{ fontSize: '1.25rem', maxWidth: '600px', margin: '0 auto 2rem' }}>
@@ -380,27 +327,26 @@ const Home: React.FC = () => {
           )}
 
           {/* Creation Box */}
-          <form className="glass-card animate-fade-in" style={{ padding: '2rem', textAlign: 'left', width: '100%', maxWidth: '800px', margin: '0 auto' }} onSubmit={handleShorten}>
+          <form className="glass-card shortener-form-card animate-fade-in" onSubmit={handleShorten}>
             {error && (
               <div style={{ backgroundColor: 'rgba(231, 76, 60, 0.1)', color: 'var(--error)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1.25rem', fontSize: '0.875rem', border: '1px solid rgba(231,76,60,0.2)' }}>
                 {error}
               </div>
             )}
             
-            <div style={{ display: 'flex', gap: '1rem', width: '100%' }}>
-              <div style={{ display: 'flex', alignItems: 'center', paddingLeft: '0.5rem', color: 'var(--text-secondary)' }}>
+            <div className="shortener-input-row">
+              <div className="shortener-input-icon">
                 <LinkIcon size={24} />
               </div>
               <input 
                 type="text" 
-                className="input-field"
-                style={{ flex: 1, fontSize: '1.1rem', padding: '1rem' }}
+                className="input-field shortener-input-field"
                 placeholder="Paste a long URL here (e.g., https://example.com/very/long/path)" 
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 required
               />
-              <button type="submit" className="btn btn-primary" style={{ padding: '0 2rem', fontSize: '1.1rem' }} disabled={shortening}>
+              <button type="submit" className="btn btn-primary shortener-submit-btn" disabled={shortening}>
                 {shortening ? 'Creating...' : user ? 'Shorten' : 'Get Started'} <ArrowRight size={20} weight="bold" />
               </button>
             </div>
@@ -548,20 +494,20 @@ const Home: React.FC = () => {
             </div>
           ) : (
             /* Logged out Selling Points */
-            <div className="animate-fade-in delay-3" style={{ display: 'flex', justifyContent: 'center', gap: '3rem', marginTop: '5rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ background: 'rgba(80, 227, 194, 0.1)', padding: '1rem', borderRadius: '50%', color: 'var(--secondary)' }}>
+            <div className="selling-points animate-fade-in delay-3">
+              <div className="selling-point-card">
+                <div className="selling-point-icon-wrapper secondary-icon">
                   <ChartLineUp size={32} />
                 </div>
                 <h3>Powerful Analytics</h3>
-                <p style={{ fontSize: '0.9rem', maxWidth: '200px' }}>Track clicks, location, and device data in real-time.</p>
+                <p>Track clicks, location, and device data in real-time.</p>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                 <div style={{ background: 'rgba(74, 144, 226, 0.1)', padding: '1rem', borderRadius: '50%', color: 'var(--primary)' }}>
+              <div className="selling-point-card">
+                 <div className="selling-point-icon-wrapper primary-icon">
                   <ShieldCheck size={32} />
                 </div>
                 <h3>Secure & Reliable</h3>
-                <p style={{ fontSize: '0.9rem', maxWidth: '200px' }}>Enterprise-grade security and 99.9% uptime guarantee.</p>
+                <p>Enterprise-grade security and 99.9% uptime guarantee.</p>
               </div>
             </div>
           )}

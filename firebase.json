@@ -98,7 +98,7 @@
   "functions": [
     {
       "source": "functions",
-      "codebase": "default",
+      "codebase": "iurlx",
       "disallowLegacyRuntimeConfig": true,
       "ignore": [
         "node_modules",

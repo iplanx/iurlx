@@ -399,7 +399,101 @@ p { margin-bottom: 1rem; color: var(--text-secondary); }
 
 .table-responsive {
   width: 100%;
-  overflow: visible;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Default Utility Classes for Responsiveness */
+.hero-title {
+  font-size: 4rem;
+  letter-spacing: -1px;
+}
+
+.hero-section.dashboard-mode {
+  padding-top: 5rem;
+  justify-content: flex-start;
+}
+
+.hero-section.landing-mode {
+  padding-top: 4rem;
+  justify-content: center;
+}
+
+.shortener-form-card {
+  padding: 2rem;
+  text-align: left;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.shortener-input-row {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+  align-items: center;
+}
+
+.shortener-input-icon {
+  display: flex;
+  align-items: center;
+  padding-left: 0.5rem;
+  color: var(--text-secondary);
+}
+
+.shortener-input-field {
+  flex: 1;
+  font-size: 1.1rem !important;
+  padding: 1rem !important;
+}
+
+.shortener-submit-btn {
+  padding: 1rem 2rem !important;
+  font-size: 1.1rem !important;
+  white-space: nowrap;
+}
+
+.selling-points {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  margin-top: 5rem;
+}
+
+.selling-point-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.selling-point-icon-wrapper {
+  padding: 1rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.selling-point-icon-wrapper.secondary-icon {
+  background: rgba(80, 227, 194, 0.1);
+  color: var(--secondary);
+}
+
+.selling-point-icon-wrapper.primary-icon {
+  background: rgba(74, 144, 226, 0.1);
+  color: var(--primary);
+}
+
+.selling-point-card h3 {
+  font-size: 1.17rem;
+}
+
+.selling-point-card p {
+  font-size: 0.9rem;
+  max-width: 200px;
+  margin: 0 auto;
+  color: var(--text-secondary);
 }
 
 .links-table {
@@ -689,6 +783,72 @@ p { margin-bottom: 1rem; color: var(--text-secondary); }
 }
 
 @media (max-width: 768px) {
+  /* Disable CSS tooltips on mobile/tablet to avoid accidental touch overlaps */
+  [data-tooltip]::before,
+  [data-tooltip]::after {
+    display: none !important;
+  }
+
+  .glass-card {
+    padding: 1.5rem !important;
+  }
+
+  .navbar {
+    padding: 1rem 1.5rem;
+  }
+  
+  .navbar .btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .hero-title {
+    font-size: 2.5rem;
+    letter-spacing: -0.5px;
+  }
+
+  .hero-section.dashboard-mode,
+  .hero-section.landing-mode {
+    padding-top: 2rem;
+  }
+
+  .shortener-form-card {
+    padding: 1.5rem;
+  }
+
+  .shortener-input-row {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: stretch;
+  }
+
+  .shortener-input-icon {
+    display: none;
+  }
+
+  .shortener-input-field {
+    font-size: 1rem !important;
+    padding: 0.75rem 1rem !important;
+    text-align: center;
+  }
+
+  .shortener-submit-btn {
+    padding: 0.75rem 1.5rem !important;
+    font-size: 1rem !important;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .selling-points {
+    flex-direction: column;
+    gap: 2.5rem;
+    margin-top: 3rem;
+  }
+
+  .links-table {
+    min-width: 650px;
+  }
+
   .links-table-card {
     padding: 1.25rem;
     margin-top: 2rem;
@@ -709,6 +869,27 @@ p { margin-bottom: 1rem; color: var(--text-secondary); }
 }
 
 @media (max-width: 480px) {
+  .navbar {
+    padding: 0.75rem 1rem;
+  }
+  
+  .navbar .btn {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+  }
+  
+  .logo {
+    font-size: 1.25rem;
+  }
+
+  .hero-title {
+    font-size: 2rem;
+  }
+
+  .dashboard-title {
+    font-size: 1.75rem;
+  }
+
   .links-table th:nth-child(3),
   .links-table td:nth-child(3) {
     display: none; /* Hide clicks column on extremely small devices */

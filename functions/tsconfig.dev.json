@@ -1,5 +1,12 @@
 {
+  "extends": "./tsconfig.json",
   "include": [
-    ".eslintrc.js"
+    "src",
+    "test",
+    ".eslintrc.js",
+    "jest.config.js"
+  ],
+  "exclude": [
+    "node_modules"
   ]
 }

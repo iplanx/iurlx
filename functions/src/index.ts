@@ -13,10 +13,18 @@ process.on("uncaughtException", (err) => {
   logger.error("GLOBAL UNCAUGHT EXCEPTION:", err, err?.stack);
 });
 process.on("unhandledRejection", (reason, promise) => {
-  logger.error("GLOBAL UNHANDLED REJECTION AT:", promise, "REASON:", reason, (reason as any)?.stack);
+  const errStack = (reason instanceof Error) ? reason.stack : undefined;
+  logger.error(
+    "GLOBAL UNHANDLED REJECTION AT:",
+    promise,
+    "REASON:",
+    reason,
+    errStack
+  );
 });
 
 try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const firebaseFunctions = require("firebase-functions");
   let currentConfig = () => ({});
   Object.defineProperty(firebaseFunctions, "config", {
@@ -49,7 +57,7 @@ const db = getFirestore();
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
 
-setGlobalOptions({ maxInstances: 10 });
+setGlobalOptions({maxInstances: 10});
 
 /**
  * Handle URL redirection based on a short shortened path.
@@ -58,7 +66,7 @@ setGlobalOptions({ maxInstances: 10 });
 export const redirectUrl = onRequest(async (req, res) => {
   // Extract shortPath from the path (e.g., /my-path -> my-path)
   const pathParts = req.path.split("/").filter((p) => p !== "");
-  
+
   // Assuming the rewrite routes directly to the short path
   const shortPath = pathParts[pathParts.length - 1];
 
@@ -69,7 +77,7 @@ export const redirectUrl = onRequest(async (req, res) => {
 
   try {
     const redirectRef = db.collection("urlRedirects").doc(shortPath);
-    
+
     // Perform a quick read of the redirection document
     const docSnap = await redirectRef.get();
 
@@ -82,8 +90,9 @@ export const redirectUrl = onRequest(async (req, res) => {
     const data = docSnap.data() as UrlRedirect;
     const originalUrl = data.originalUrl;
 
-    // Increment click count asynchronously to deliver the fastest redirect response to the user.
-    // Native FieldValue.increment handles high-concurrency updates smoothly without transaction contention.
+    // Increment click count asynchronously to deliver the fastest redirect
+    // response to the user. Native FieldValue.increment handles
+    // high-concurrency updates smoothly without transaction contention.
     redirectRef.update({
       count: FieldValue.increment(1),
       updatedAt: FieldValue.serverTimestamp(),
@@ -92,7 +101,7 @@ export const redirectUrl = onRequest(async (req, res) => {
     });
 
     logger.info(`Redirecting ${shortPath} to ${originalUrl}`);
-    
+
     // Perform 302 Found redirect
     res.redirect(302, originalUrl);
   } catch (error) {
@@ -105,20 +114,35 @@ export const redirectUrl = onRequest(async (req, res) => {
  * API to create a new URL redirect.
  * Only authenticated users can create redirects.
  */
-export const createUrlRedirect = onCall<CreateUrlRedirectRequest, Promise<CreateUrlRedirectResponse>>(async (request) => {
+export const createUrlRedirect = onCall<
+  CreateUrlRedirectRequest,
+  Promise<CreateUrlRedirectResponse>
+>(async (request) => {
+  const auth = request.auth;
+
   // Check authentication
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
+  if (!auth) {
+    throw new HttpsError(
+      "unauthenticated",
+      "The function must be called while authenticated."
+    );
   }
 
+  const ownerId = auth.uid;
   const {shortPath, originalUrl, label} = request.data;
 
   // Basic validation
   if (!shortPath || typeof shortPath !== "string") {
-    throw new HttpsError("invalid-argument", "The 'shortPath' must be a non-empty string.");
+    throw new HttpsError(
+      "invalid-argument",
+      "The 'shortPath' must be a non-empty string."
+    );
   }
   if (!originalUrl || typeof originalUrl !== "string") {
-    throw new HttpsError("invalid-argument", "The 'originalUrl' must be a non-empty string.");
+    throw new HttpsError(
+      "invalid-argument",
+      "The 'originalUrl' must be a non-empty string."
+    );
   }
 
   const redirectRef = db.collection("urlRedirects").doc(shortPath);
@@ -128,14 +152,17 @@ export const createUrlRedirect = onCall<CreateUrlRedirectRequest, Promise<Create
     await db.runTransaction(async (transaction) => {
       const doc = await transaction.get(redirectRef);
       if (doc.exists) {
-        throw new HttpsError("already-exists", `The path '${shortPath}' is already taken.`);
+        throw new HttpsError(
+          "already-exists",
+          `The path '${shortPath}' is already taken.`
+        );
       }
 
       const newRedirect: UrlRedirect = {
         originalUrl,
         label: label || "",
         count: 0,
-        ownerId: request.auth!.uid,
+        ownerId: ownerId,
         createdAt: FieldValue.serverTimestamp() as FieldValue,
         updatedAt: FieldValue.serverTimestamp() as FieldValue,
       };
@@ -143,7 +170,9 @@ export const createUrlRedirect = onCall<CreateUrlRedirectRequest, Promise<Create
       transaction.set(redirectRef, newRedirect);
     });
 
-    logger.info(`Redirect created: ${shortPath} -> ${originalUrl} by ${request.auth!.uid}`);
+    logger.info(
+      `Redirect created: ${shortPath} -> ${originalUrl} by ${ownerId}`
+    );
 
     return {
       success: true,
@@ -155,18 +184,27 @@ export const createUrlRedirect = onCall<CreateUrlRedirectRequest, Promise<Create
       throw error;
     }
     logger.error("Error creating redirect:", error);
-    throw new HttpsError("internal", "An internal error occurred while creating the redirect.");
+    throw new HttpsError(
+      "internal",
+      "An internal error occurred while creating the redirect."
+    );
   }
 });
 
 /**
  * API to check if a short path is available.
  */
-export const checkShortPathAvailability = onCall<CheckShortPathAvailabilityRequest, Promise<CheckShortPathAvailabilityResponse>>(async (request) => {
+export const checkShortPathAvailability = onCall<
+  CheckShortPathAvailabilityRequest,
+  Promise<CheckShortPathAvailabilityResponse>
+>(async (request) => {
   const {shortPath} = request.data;
 
   if (!shortPath || typeof shortPath !== "string") {
-    throw new HttpsError("invalid-argument", "The 'shortPath' must be a non-empty string.");
+    throw new HttpsError(
+      "invalid-argument",
+      "The 'shortPath' must be a non-empty string."
+    );
   }
 
   try {
@@ -176,6 +214,9 @@ export const checkShortPathAvailability = onCall<CheckShortPathAvailabilityReque
     };
   } catch (error) {
     logger.error("Error checking path availability:", error);
-    throw new HttpsError("internal", "An internal error occurred while checking path availability.");
+    throw new HttpsError(
+      "internal",
+      "An internal error occurred while checking path availability."
+    );
   }
 });
