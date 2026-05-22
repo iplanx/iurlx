@@ -21,8 +21,10 @@ import {
   Check,
   CaretDown,
   CaretUp,
-  PencilSimple
+  PencilSimple,
+  QrCode
 } from 'phosphor-react';
+import { downloadQR } from '../utils/downloadQR';
 
 const Home: React.FC = () => {
   const [url, setUrl] = useState('');
@@ -176,6 +178,25 @@ const Home: React.FC = () => {
     }).catch(err => {
       console.error('Failed to copy: ', err);
     });
+  };
+
+  // Generate and download QR Code for link
+  const handleDownloadQR = async (shortPath: string, label: string) => {
+    const fullShortUrl = getShortUrl(shortPath);
+    const sanitizedLabel = label ? label.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-') : '';
+    const namePart = sanitizedLabel ? sanitizedLabel : shortPath;
+    const fileName = `qr-${namePart}`;
+
+    try {
+      setToast('Generating QR code...');
+      await downloadQR(fullShortUrl, '/logo192.png', 500, fileName);
+      setToast('QR Code downloaded successfully!');
+      setTimeout(() => setToast(''), 3000);
+    } catch (err) {
+      console.error('Failed to download QR code: ', err);
+      setToast('Failed to download QR code.');
+      setTimeout(() => setToast(''), 3000);
+    }
   };
 
   // Delete Link
@@ -467,6 +488,13 @@ const Home: React.FC = () => {
                                   title="Copy to clipboard"
                                 >
                                   {copiedId === link.id ? <Check size={18} weight="bold" /> : <Copy size={18} />}
+                                </button>
+                                <button 
+                                  onClick={() => handleDownloadQR(link.id, link.label)} 
+                                  className="icon-btn qr-btn"
+                                  title="Download QR Code"
+                                >
+                                  <QrCode size={18} />
                                 </button>
                                 <button 
                                   onClick={() => startEditing(link)} 
