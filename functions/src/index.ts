@@ -49,6 +49,7 @@ import {
   CreateUrlRedirectResponse,
   CheckShortPathAvailabilityRequest,
   CheckShortPathAvailabilityResponse,
+  URL_REDIRECTS_COLLECTION,
 } from "./API";
 
 initializeApp();
@@ -76,7 +77,7 @@ export const redirectUrl = onRequest(async (req, res) => {
   }
 
   try {
-    const redirectRef = db.collection("urlRedirects").doc(shortPath);
+    const redirectRef = db.collection(URL_REDIRECTS_COLLECTION).doc(shortPath);
 
     // Perform a quick read of the redirection document
     const docSnap = await redirectRef.get();
@@ -145,7 +146,7 @@ export const createUrlRedirect = onCall<
     );
   }
 
-  const redirectRef = db.collection("urlRedirects").doc(shortPath);
+  const redirectRef = db.collection(URL_REDIRECTS_COLLECTION).doc(shortPath);
 
   try {
     // Check if shortPath already exists using a transaction
@@ -208,7 +209,7 @@ export const checkShortPathAvailability = onCall<
   }
 
   try {
-    const doc = await db.collection("urlRedirects").doc(shortPath).get();
+    const doc = await db.collection(URL_REDIRECTS_COLLECTION).doc(shortPath).get();
     return {
       exists: doc.exists,
     };

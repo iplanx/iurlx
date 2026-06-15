@@ -43,3 +43,4 @@ export interface CheckShortPathAvailabilityRequest {
 export interface CheckShortPathAvailabilityResponse {
   exists: boolean;
 }
+export const URL_REDIRECTS_COLLECTION = "urlRedirects";
