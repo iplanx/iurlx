@@ -1,4 +1,4 @@
-import {FieldValue} from "firebase-admin/firestore";
+import { FieldValue } from 'firebase-admin/firestore';
 
 /**
  * Represents the structure of a URL redirect document in Firestore.
@@ -43,4 +43,4 @@ export interface CheckShortPathAvailabilityRequest {
 export interface CheckShortPathAvailabilityResponse {
   exists: boolean;
 }
-export const URL_REDIRECTS_COLLECTION = "urlRedirects";
+export const URL_REDIRECTS_COLLECTION = 'urlRedirects';

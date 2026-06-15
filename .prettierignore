@@ -1,0 +1,4 @@
+functions/.eslintrc.js
+app/build/**
+functions/lib/**
+node_modules/**

@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { getAuth, signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import {
+  getAuth,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+} from 'firebase/auth';
 import { app } from '../firebase';
 import { EnvelopeSimple, LockKey, GoogleLogo } from 'phosphor-react';
 
@@ -9,7 +15,7 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   const navigate = useNavigate();
   const location = useLocation();
   const auth = getAuth(app);
@@ -19,10 +25,10 @@ const Login: React.FC = () => {
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
-    
+
     setLoading(true);
     setError('');
-    
+
     try {
       if (isSignUp) {
         await createUserWithEmailAndPassword(auth, email, password);
@@ -51,7 +57,9 @@ const Login: React.FC = () => {
     <div className="login-layout">
       <div className="hero-bg-glow" style={{ opacity: 0.5 }}></div>
       <div className="container" style={{ position: 'absolute', top: '1.5rem', left: '0', padding: '0 2rem' }}>
-        <Link to="/" className="logo text-gradient">iurl.me</Link>
+        <Link to="/" className="logo text-gradient">
+          iurl.me
+        </Link>
       </div>
 
       <div className="glass-card login-card animate-fade-in">
@@ -65,16 +73,20 @@ const Login: React.FC = () => {
         </div>
 
         {error && (
-          <div style={{ backgroundColor: 'rgba(231, 76, 60, 0.1)', color: 'var(--error)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.875rem' }}>
+          <div
+            style={{
+              backgroundColor: 'rgba(231, 76, 60, 0.1)',
+              color: 'var(--error)',
+              padding: '0.75rem',
+              borderRadius: '8px',
+              marginBottom: '1rem',
+              fontSize: '0.875rem',
+            }}>
             {error}
           </div>
         )}
 
-        <button 
-          type="button" 
-          className="btn btn-google"
-          onClick={handleGoogleLogin}
-        >
+        <button type="button" className="btn btn-google" onClick={handleGoogleLogin}>
           <GoogleLogo size={20} weight="bold" color="#ea4335" />
           {isSignUp ? 'Sign up with Google' : 'Continue with Google'}
         </button>
@@ -89,17 +101,24 @@ const Login: React.FC = () => {
           <div className="input-group">
             <label htmlFor="email">Email address</label>
             <div style={{ position: 'relative' }}>
-              <div style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }}>
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '1rem',
+                  transform: 'translateY(-50%)',
+                  color: 'var(--text-secondary)',
+                }}>
                 <EnvelopeSimple size={20} />
               </div>
-              <input 
+              <input
                 id="email"
-                type="email" 
-                className="input-field" 
+                type="email"
+                className="input-field"
                 style={{ paddingLeft: '2.5rem' }}
-                placeholder="name@company.com" 
+                placeholder="name@company.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
                 required
               />
             </div>
@@ -109,39 +128,56 @@ const Login: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <label htmlFor="password">Password</label>
               {!isSignUp && (
-                <Link to="/forgot-password" style={{ fontSize: '0.875rem', color: 'var(--primary)', textDecoration: 'none' }}>Forgot password?</Link>
+                <Link
+                  to="/forgot-password"
+                  style={{ fontSize: '0.875rem', color: 'var(--primary)', textDecoration: 'none' }}>
+                  Forgot password?
+                </Link>
               )}
             </div>
             <div style={{ position: 'relative' }}>
-               <div style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }}>
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '1rem',
+                  transform: 'translateY(-50%)',
+                  color: 'var(--text-secondary)',
+                }}>
                 <LockKey size={20} />
               </div>
-              <input 
+              <input
                 id="password"
-                type="password" 
-                className="input-field" 
+                type="password"
+                className="input-field"
                 style={{ paddingLeft: '2.5rem' }}
-                placeholder="••••••••" 
+                placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
                 required
               />
             </div>
           </div>
 
           <button type="submit" className="btn btn-primary w-full" disabled={loading}>
-            {loading ? (isSignUp ? 'Creating account...' : 'Logging in...') : (isSignUp ? 'Sign up' : 'Log in')}
+            {loading ? (isSignUp ? 'Creating account...' : 'Logging in...') : isSignUp ? 'Sign up' : 'Log in'}
           </button>
         </form>
 
         <p className="text-center" style={{ marginTop: '1.5rem', fontSize: '0.875rem' }}>
           {isSignUp ? (
             <>
-              Already have an account? <Link to="/signin" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: '500' }}>Log in</Link>
+              Already have an account?{' '}
+              <Link to="/signin" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: '500' }}>
+                Log in
+              </Link>
             </>
           ) : (
             <>
-              Don't have an account? <Link to="/signup" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: '500' }}>Sign up</Link>
+              Don't have an account?{' '}
+              <Link to="/signup" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: '500' }}>
+                Sign up
+              </Link>
             </>
           )}
         </p>

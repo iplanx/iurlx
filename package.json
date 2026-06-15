@@ -17,6 +17,12 @@
     "build": "yarn build:staging",
     "build:staging": "yarn workspace iurlx build:staging",
     "build:prod": "yarn workspace iurlx build:prod",
-    "build:dev": "yarn workspace iurlx build:dev"
+    "build:dev": "yarn workspace iurlx build:dev",
+    "format": "node scripts/format.js --write",
+    "format:check": "node scripts/format.js --check",
+    "lint": "yarn workspace iurlx lint && yarn workspace functions lint"
+  },
+  "devDependencies": {
+    "prettier": "^3.2.5"
   }
 }

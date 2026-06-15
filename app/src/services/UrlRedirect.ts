@@ -1,14 +1,14 @@
-import { 
-  collection, 
-  doc, 
-  setDoc, 
-  deleteDoc, 
-  onSnapshot, 
-  query, 
-  where, 
-  serverTimestamp, 
+import {
+  collection,
+  doc,
+  setDoc,
+  deleteDoc,
+  onSnapshot,
+  query,
+  where,
+  serverTimestamp,
   getDoc,
-  Unsubscribe
+  Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -24,37 +24,38 @@ export interface LinkData {
  * 1. Subscribe to urlRedirects for a specific owner
  */
 export function subscribeUrlRedirects(
-  ownerId: string, 
-  onUpdate: (links: LinkData[]) => void, 
+  ownerId: string,
+  onUpdate: (links: LinkData[]) => void,
   onError: (error: any) => void
 ): Unsubscribe {
-  const q = query(
-    collection(db, 'urlRedirects'),
-    where('ownerId', '==', ownerId)
-  );
+  const q = query(collection(db, 'urlRedirects'), where('ownerId', '==', ownerId));
 
-  return onSnapshot(q, (snapshot) => {
-    const fetchedLinks: LinkData[] = [];
-    snapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-      fetchedLinks.push({
-        id: docSnap.id,
-        originalUrl: data.originalUrl,
-        label: data.label || '',
-        count: data.count || 0,
-        createdAt: data.createdAt
+  return onSnapshot(
+    q,
+    snapshot => {
+      const fetchedLinks: LinkData[] = [];
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        fetchedLinks.push({
+          id: docSnap.id,
+          originalUrl: data.originalUrl,
+          label: data.label || '',
+          count: data.count || 0,
+          createdAt: data.createdAt,
+        });
       });
-    });
-    
-    // Sort by createdAt descending
-    fetchedLinks.sort((a, b) => {
-      const timeA = a.createdAt?.seconds || 0;
-      const timeB = b.createdAt?.seconds || 0;
-      return timeB - timeA;
-    });
 
-    onUpdate(fetchedLinks);
-  }, onError);
+      // Sort by createdAt descending
+      fetchedLinks.sort((a, b) => {
+        const timeA = a.createdAt?.seconds || 0;
+        const timeB = b.createdAt?.seconds || 0;
+        return timeB - timeA;
+      });
+
+      onUpdate(fetchedLinks);
+    },
+    onError
+  );
 }
 
 /**
@@ -70,9 +71,9 @@ export async function checkShortPathAvailability(shortPath: string): Promise<boo
  * 3. Create a new URL redirect object
  */
 export async function createUrlRedirect(
-  shortPath: string, 
-  originalUrl: string, 
-  label: string, 
+  shortPath: string,
+  originalUrl: string,
+  label: string,
   ownerId: string
 ): Promise<void> {
   const docRef = doc(db, 'urlRedirects', shortPath);
@@ -82,7 +83,7 @@ export async function createUrlRedirect(
     count: 0,
     ownerId,
     createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp()
+    updatedAt: serverTimestamp(),
   });
 }
 
@@ -121,7 +122,7 @@ export async function updateUrlRedirect(
       count: currentCount,
       ownerId,
       createdAt: createdAt || serverTimestamp(),
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
     });
 
     // Delete old document
@@ -135,7 +136,7 @@ export async function updateUrlRedirect(
       count: currentCount,
       ownerId,
       createdAt: createdAt || serverTimestamp(),
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
     });
   }
 }

@@ -59,7 +59,14 @@ GitHub Actions are configured to automatically build and deploy the correct envi
 
 If you need to deploy directly from your machine using the Firebase CLI:
 
-#### Deploying to Staging (`iplanx-staging`)
+#### 1. Sync Firestore Indexes (Optional/Recommended)
+
+Before deployment, you can pull the latest Firestore indexes from the active database to ensure your local config file is in sync:
+```bash
+firebase firestore:indexes > firestore.indexes.json
+```
+
+#### 2. Deploying to Staging (`iplanx-staging`)
 
 1. **Select target environment**:
    ```bash
@@ -74,7 +81,7 @@ If you need to deploy directly from your machine using the Firebase CLI:
    firebase deploy --only functions,firestore,hosting:iurlx-staging
    ```
 
-#### Deploying to Production (`iplanx-bb47f`)
+#### 3. Deploying to Production (`iplanx-bb47f`)
 
 1. **Select target environment**:
    ```bash

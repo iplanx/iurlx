@@ -29,7 +29,8 @@
     "build:dev": "cross-env REACT_APP_ENVIRONMENT=DEV react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "emulator": "react-scripts start --port 5000"
+    "emulator": "react-scripts start --port 5000",
+    "lint": "eslint src/."
   },
   "eslintConfig": {
     "extends": [
