@@ -2,6 +2,7 @@ import {
   collection,
   doc,
   setDoc,
+  updateDoc,
   deleteDoc,
   onSnapshot,
   query,
@@ -117,31 +118,33 @@ export async function updateUrlRedirect(
       throw new Error(`The short path "${newShortPath}" is already taken by another link.`);
     }
 
-    // Set new document with copy of data + modifications
+    // Get the old document to preserve any extra fields (e.g., third-party metadata)
+    const oldDocRef = doc(db, 'urlRedirects', oldShortPath);
+    const oldDocSnap = await getDoc(oldDocRef);
+    const oldData = oldDocSnap.exists() ? oldDocSnap.data() : {};
+
+    // Set new document with copy of all old data + modifications
     const newDocRef = doc(db, 'urlRedirects', newShortPath);
     await setDoc(newDocRef, {
+      ...oldData,
       originalUrl,
       label,
       count: currentCount,
       ownerId,
-      createdAt: createdAt || serverTimestamp(),
+      createdAt: createdAt || oldData.createdAt || serverTimestamp(),
       updatedAt: serverTimestamp(),
-      isThirdParty: isThirdParty || false,
+      isThirdParty: isThirdParty || oldData.isThirdParty || false,
     });
 
     // Delete old document
     await deleteUrlRedirect(oldShortPath);
   } else {
-    // Same slug, just write/overwrite the existing doc ID
+    // Same slug, just update fields to avoid overwriting database fields we don't know about
     const docRef = doc(db, 'urlRedirects', oldShortPath);
-    await setDoc(docRef, {
+    await updateDoc(docRef, {
       originalUrl,
       label,
-      count: currentCount,
-      ownerId,
-      createdAt: createdAt || serverTimestamp(),
       updatedAt: serverTimestamp(),
-      isThirdParty: isThirdParty || false,
     });
   }
 }
