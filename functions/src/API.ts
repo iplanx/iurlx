@@ -10,6 +10,7 @@ export interface UrlRedirect {
   ownerId: string;
   createdAt: FieldValue;
   updatedAt: FieldValue;
+  isThirdParty?: boolean;
 }
 
 /**

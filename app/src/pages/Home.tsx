@@ -266,7 +266,8 @@ const Home: React.FC = () => {
         finalLabel,
         ownerId,
         editingLink.count,
-        editingLink.createdAt
+        editingLink.createdAt,
+        editingLink.isThirdParty
       );
 
       setEditingLink(null);
@@ -596,6 +597,7 @@ const Home: React.FC = () => {
                     placeholder="https://example.com/very-long-link"
                     value={editUrl}
                     onChange={e => setEditUrl(e.target.value)}
+                    disabled={editingLink?.isThirdParty}
                   />
                 </div>
 
@@ -626,8 +628,15 @@ const Home: React.FC = () => {
                     placeholder="e.g. Personal Instagram"
                     value={editLabel}
                     onChange={e => setEditLabel(e.target.value)}
+                    disabled={editingLink?.isThirdParty}
                   />
                 </div>
+
+                {editingLink?.isThirdParty && (
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                    Note: Since this is a third-party link, you can only modify its slug.
+                  </p>
+                )}
 
                 {editError && <div className="error-message">{editError}</div>}
               </div>

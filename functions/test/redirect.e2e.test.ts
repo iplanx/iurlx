@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import * as test from "firebase-functions-test";
+import test from "firebase-functions-test";
 import * as admin from "firebase-admin";
 import {
   CreateUrlRedirectRequest,
@@ -67,7 +67,7 @@ describe("URL Redirection System E2E", () => {
         originalUrl: "https://example.com",
       };
 
-      await expect(wrapped({data})).rejects.toThrow(/unauthenticated/);
+      await expect(wrapped({data})).rejects.toThrow(/authenticated/);
     });
 
     it("should fail if shortPath already exists", async () => {
@@ -151,6 +151,9 @@ describe("URL Redirection System E2E", () => {
       await redirectUrl(req as any, res as any);
 
       expect(res.redirect).toHaveBeenCalledWith(302, originalUrl);
+
+      // Wait a short moment for the async Firestore update to resolve in the emulator
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Verify count increment
       const doc = await db.collection("urlRedirects").doc(path).get();

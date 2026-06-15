@@ -35,7 +35,7 @@ try {
 
 import { setGlobalOptions } from 'firebase-functions';
 import { onRequest, onCall, HttpsError } from 'firebase-functions/v2/https';
-import { initializeApp } from 'firebase-admin/app';
+import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import {
   UrlRedirect,
@@ -46,7 +46,9 @@ import {
   URL_REDIRECTS_COLLECTION,
 } from './API';
 
-initializeApp();
+if (getApps().length === 0) {
+  initializeApp();
+}
 const db = getFirestore();
 
 // Start writing functions
@@ -147,6 +149,7 @@ export const createUrlRedirect = onCall<CreateUrlRedirectRequest, Promise<Create
         ownerId: ownerId,
         createdAt: FieldValue.serverTimestamp() as FieldValue,
         updatedAt: FieldValue.serverTimestamp() as FieldValue,
+        isThirdParty: false,
       };
 
       transaction.set(redirectRef, newRedirect);

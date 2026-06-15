@@ -284,7 +284,12 @@ service cloud.firestore {
       allow get: if true;
       allow list: if request.auth != null && resource.data.ownerId == request.auth.uid;
       allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
-      allow update: if request.auth != null && resource.data.ownerId == request.auth.uid && request.resource.data.ownerId == resource.data.ownerId;
+      allow update: if request.auth != null 
+                    && resource.data.ownerId == request.auth.uid 
+                    && request.resource.data.ownerId == resource.data.ownerId
+                    && (resource.data.get('isThirdParty', false) == false 
+                        || (request.resource.data.originalUrl == resource.data.originalUrl 
+                            && request.resource.data.label == resource.data.label));
       allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
     

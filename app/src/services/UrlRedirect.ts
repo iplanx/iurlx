@@ -18,6 +18,7 @@ export interface LinkData {
   label: string;
   count: number;
   createdAt: any;
+  isThirdParty?: boolean;
 }
 
 /**
@@ -42,6 +43,7 @@ export function subscribeUrlRedirects(
           label: data.label || '',
           count: data.count || 0,
           createdAt: data.createdAt,
+          isThirdParty: data.isThirdParty || false,
         });
       });
 
@@ -105,7 +107,8 @@ export async function updateUrlRedirect(
   label: string,
   ownerId: string,
   currentCount: number,
-  createdAt: any
+  createdAt: any,
+  isThirdParty?: boolean
 ): Promise<void> {
   if (oldShortPath !== newShortPath) {
     // If slug changed, verify new slug isn't already taken
@@ -123,6 +126,7 @@ export async function updateUrlRedirect(
       ownerId,
       createdAt: createdAt || serverTimestamp(),
       updatedAt: serverTimestamp(),
+      isThirdParty: isThirdParty || false,
     });
 
     // Delete old document
@@ -137,6 +141,7 @@ export async function updateUrlRedirect(
       ownerId,
       createdAt: createdAt || serverTimestamp(),
       updatedAt: serverTimestamp(),
+      isThirdParty: isThirdParty || false,
     });
   }
 }
