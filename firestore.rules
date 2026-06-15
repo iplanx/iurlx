@@ -3,10 +3,14 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      return request.auth != null && exists(userPath) && 'Admin' in get(userPath).data.get('roles', []);
     }
     function isOwner() {
       return request.auth.uid == resource.data.get('ownerId', null) || (request.method in ['create', 'update'] && request.resource.data.get('ownerId', null) == request.auth.uid);
+    }
+    function isUser(uid) {
+      return request.auth.uid == uid;
     }
 
     function isEntityOwner() {
@@ -15,6 +19,23 @@ service cloud.firestore {
 
     function isVendorOwner(vendorId) {
       return request.auth.uid == get(/databases/$(database)/documents/vendors/$(vendorId)).data.ownerId;
+    }
+
+    function isVendorEditor(vendorId) {
+      let vendorPath = /databases/$(database)/documents/vendors/$(vendorId);
+      return request.auth != null && exists(vendorPath) && (
+        request.auth.uid == get(vendorPath).data.get('ownerId', null) || (
+          get(vendorPath).data.get('roles', null) != null &&
+          request.auth.uid in get(vendorPath).data.roles &&
+          get(vendorPath).data.roles[request.auth.uid].get('accessLevel', 99) <= 2
+        )
+      );
+    }
+
+    function isEventVendorEditor(eventId) {
+      let eventData = get(/databases/$(database)/documents/events/$(eventId)).data;
+      let vendorId = eventData.get('ownerId', null);
+      return vendorId != null && isVendorEditor(vendorId);
     }
 
     function isEventOwner(eventId) {
@@ -35,7 +56,7 @@ service cloud.firestore {
     }
 
     function visibility(visibilityStatus) {
-      return resource.data.visibility == visibilityStatus || (request.resource != null && request.resource.data.visibility == visibilityStatus);
+      return (resource != null && resource.data.get('visibility', null) == visibilityStatus) || (request.method in ['create', 'update'] && request.resource.data.get('visibility', null) == visibilityStatus);
     }
 
     match /events/{eventId} {
@@ -45,23 +66,46 @@ service cloud.firestore {
       allow read: if request.auth != null && resource.data.collaboratorIdsAndUids.hasAny(getUserManagingVendorIds());
       allow create, update, delete: if false;
 
-      match /followers/{followerId} {
-        allow create: if request.auth!= null;
-        allow read, update, delete: if request.auth!= null && (isOwner() || isAdmin());
-      }
       
       match /managers/{managerId} {
         allow read, write: if request.auth!= null && (isOwner() || isAdmin());
       }
 
-      match /guests/{guestId} {
+      match /guestlists/{guestlistId} {
+        allow read: if resource.data.get('status', null) == 'Public';
+        // Vendor-mapped guestlists on public events (artist page links include private access code).
+        allow read: if resource.data.get('status', null) == 'Private'
+          && resource.data.get('entityOwner', null) != null
+          && get(/databases/$(database)/documents/events/$(eventId)).data.get('visibility', null) == 'Public';
+        allow read: if request.auth != null && (
+          isEventOwner(eventId) ||
+          isEventVendorEditor(eventId) ||
+          isAdmin() ||
+          (resource.data.get('entityOwner', null) != null && isUser(resource.data.entityOwner.id)) ||
+          (resource.data.get('entityOwner', null) != null && isVendorEditor(resource.data.entityOwner.id))
+        );
+        allow create, update, delete: if false;
+
+        match /guests/{guestId} {
           allow read: if request.auth != null && (
             request.auth.uid == resource.data.ownerId ||
-            request.auth.uid == resource.data.promoterOwnerId ||
+            (resource.data.get('entityOwner', null) != null && isUser(resource.data.entityOwner.id)) ||
+            (resource.data.get('entityOwner', null) != null && isVendorEditor(resource.data.entityOwner.id)) ||
             isEventOwner(eventId) ||
+            isEventVendorEditor(eventId) ||
             isAdmin()
             );
           allow create, update, delete: if false;
+        }
+
+        match /settings/{settingId} {
+          allow read: if request.auth != null && (
+            isEventOwner(eventId) ||
+            isAdmin() ||
+            request.auth.uid in resource.data.collaboratorIdsAndUids
+          );
+          allow create, update, delete: if false;
+        }
       }
 
       match /ticketLinkAudiences/{leadId} {
@@ -74,10 +118,7 @@ service cloud.firestore {
 
       match /settings/{settingId} {
         allow read: if true;
-        allow create,update,delete: if request.auth!= null && 
-        (request.auth.uid == get(/databases/$(database)/documents/events/$(eventId)).data.ownerId ||
-        isAdmin()
-        );
+        allow create,update,delete: if false;
       }
 
       match /tickets/{ticketId} {
@@ -91,16 +132,53 @@ service cloud.firestore {
         allow create, update, delete: if request.auth != null && (isEventOwner(eventId) || isAdmin());
       }
 
-      match /promotions/{promotionId} {
+      match /campaigns/{campaignId} {
         allow read, create, update, delete: if request.auth != null && isEventOwner(eventId);
+
+        match /stats/{statId} {
+          allow read, write: if request.auth != null && isEventOwner(eventId);
+        }
+      }
+
+      match /reports/{reportId} {
+        allow read: if request.auth != null && (isEventOwner(eventId) || isAdmin());
+        allow create, update, delete: if false; // only backend functions can write to reports
+      }
+
+      match /trackings/{trackingId} {
+        allow read: if request.auth != null && (
+          isEventOwner(eventId) ||
+          isEventVendorEditor(eventId) ||
+          isAdmin() ||
+          request.auth.uid in get(/databases/$(database)/documents/events/$(eventId)).data.get('authorizedUids', []) ||
+          request.auth.uid in get(/databases/$(database)/documents/events/$(eventId)).data.get('collaboratorIdsAndUids', []) ||
+          get(/databases/$(database)/documents/events/$(eventId)).data.get('collaboratorIdsAndUids', []).hasAny(getUserManagingVendorIds())
+        );
+        allow write: if false;
       }
       
       match /raffles/{raffleId} {
-        allow read: if true;
+        allow read: if resource.data.get('status', null) == 'Public';
+        // Vendor-mapped raffles on public events (artist page links include private access code).
+        allow read: if resource.data.get('status', null) == 'Private'
+          && resource.data.get('entityOwner', null) != null
+          && get(/databases/$(database)/documents/events/$(eventId)).data.get('visibility', null) == 'Public';
+        allow read: if request.auth != null && (
+          isEventOwner(eventId) ||
+          isEventVendorEditor(eventId) ||
+          isAdmin() ||
+          (resource.data.get('entityOwner', null) != null && isUser(resource.data.entityOwner.id)) ||
+          (resource.data.get('entityOwner', null) != null && isVendorEditor(resource.data.entityOwner.id))
+        );
         allow write: if false;
 
         match /entries/{entryId} {
-          allow read: if request.auth != null && (isOwner() || isEventOwner(eventId) || isAdmin());
+          allow read: if request.auth != null && (
+            isOwner() ||
+            isAdmin() ||
+            isUser(resource.data.entityOwner.id) ||
+            isVendorEditor(resource.data.entityOwner.id)
+          );
           allow write: if false;
         }
       }
@@ -142,7 +220,7 @@ service cloud.firestore {
 
       match /vendorCollaborators/{collaboratorId} {
         allow create: if true; // public
-        allow read: if request.auth!= null && (isOwner() || isAdmin() || isVendorOwner(vendorId));
+        allow read: if request.auth!= null && (isOwner() || isAdmin() || isVendorEditor(vendorId));
         allow update,delete: if false;
       }
 
@@ -168,11 +246,6 @@ service cloud.firestore {
         allow create, update, delete: if false;
       }
 
-      match /followers/{followerId} {
-        allow create: if request.auth!= null;
-        allow read, update, delete: if request.auth!= null && (isOwner() || isVendorOwner(vendorId) || isAdmin());
-      }
-      
       match /managers/{managerId} {
         allow read, write: if request.auth!= null && (isOwner() || isAdmin());
       }
@@ -186,11 +259,27 @@ service cloud.firestore {
       }
 
       match /audience/{audienceId} {
-        allow read, create, update, delete: if request.auth != null && (isOwner() || isAdmin() || isVendorOwner(vendorId));
+        allow read, create, update, delete: if request.auth != null && (isOwner() || isAdmin() || isVendorEditor(vendorId));
+      }
+
+      match /audienceGroups/{groupId} {
+        allow read: if request.auth != null && (isAdmin() || isVendorEditor(vendorId));
+        allow write: if false;
+      }
+
+      match /trackings/{trackingId} {
+        allow read: if request.auth != null && (isVendorEditor(vendorId) || isAdmin());
+        allow write: if false;
       }
 
       match /raffles/{raffleId} {
-        allow read: if true;
+        allow read: if resource.data.get('status', null) == 'Public';
+        allow read: if request.auth != null && (
+          isVendorOwner(vendorId) ||
+          isAdmin() ||
+          (resource.data.get('entityOwner', null) != null && isUser(resource.data.entityOwner.id)) ||
+          (resource.data.get('entityOwner', null) != null && isVendorOwner(resource.data.entityOwner.id))
+        );
         allow write: if false;
 
         match /entries/{entryId} {
@@ -202,7 +291,7 @@ service cloud.firestore {
     match /users/{userId} {
     	allow read: if true;
       allow create: if request.auth!= null;
-      allow delete, update: if request.auth!= null && ( isOwner() || isAdmin());
+      allow delete, update: if request.auth!= null && isAdmin();
       
       function isNotifier() {
         return request.auth.uid == resource.data.get('notifier', {}).get('id', null) || (request.method in ['create', 'update'] && request.resource.data.get('notifier', {}).get('id', null) == request.auth.uid);
@@ -213,14 +302,17 @@ service cloud.firestore {
         allow delete: if request.auth!= null && ( isOwner() || isAdmin());
       }
 
-      match /followings/{followingId} {
-        allow create, read, update, delete: if request.auth!= null && (isOwner() || isAdmin());
-      }
 
       match /orders/{orderId} {
         allow create, read, update, delete: if request.auth!= null && (isOwner() || isAdmin());
       }
+      
+      match /referralUsages/{referralId} {
+        allow read: if request.auth != null && (isUser(userId) || isAdmin());
+        allow write: if false; // only backend functions can write
+      }
     }
+
     match /chats/{chatId} {
       allow create: if request.auth!= null;
     	allow read: if request.auth!= null && request.auth.uid in resource.data.authorizedUid;
@@ -284,12 +376,7 @@ service cloud.firestore {
       allow get: if true;
       allow list: if request.auth != null && resource.data.ownerId == request.auth.uid;
       allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
-      allow update: if request.auth != null 
-                    && resource.data.ownerId == request.auth.uid 
-                    && request.resource.data.ownerId == resource.data.ownerId
-                    && (resource.data.get('isThirdParty', false) == false 
-                        || (request.resource.data.originalUrl == resource.data.originalUrl 
-                            && request.resource.data.label == resource.data.label));
+      allow update: if request.auth != null && resource.data.ownerId == request.auth.uid && request.resource.data.ownerId == resource.data.ownerId;
       allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
     
