@@ -16,26 +16,6 @@
       ],
       "rewrites": [
         {
-          "source": "/signin",
-          "destination": "/index.html"
-        },
-        {
-          "source": "/signup",
-          "destination": "/index.html"
-        },
-        {
-          "source": "/home",
-          "destination": "/index.html"
-        },
-        {
-          "source": "/x",
-          "destination": "/index.html"
-        },
-        {
-          "source": "/x/**",
-          "destination": "/index.html"
-        },
-        {
           "source": "**",
           "function": "redirectUrl"
         }
@@ -50,26 +30,6 @@
         "**/node_modules/**"
       ],
       "rewrites": [
-        {
-          "source": "/signin",
-          "destination": "/index.html"
-        },
-        {
-          "source": "/signup",
-          "destination": "/index.html"
-        },
-        {
-          "source": "/home",
-          "destination": "/index.html"
-        },
-        {
-          "source": "/x",
-          "destination": "/index.html"
-        },
-        {
-          "source": "/x/**",
-          "destination": "/index.html"
-        },
         {
           "source": "**",
           "function": "redirectUrl"

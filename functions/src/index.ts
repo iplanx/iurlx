@@ -57,8 +57,19 @@ const db = getFirestore();
 setGlobalOptions({ maxInstances: 10, invoker: 'public' });
 
 /**
+ * Helper to get the main website URL based on environment.
+ * @return {string} The main website URL.
+ */
+function getMainWebsiteUrl(): string {
+  const projectId = process.env.GCLOUD_PROJECT || process.env.FIREBASE_CONFIG;
+  const isStaging = typeof projectId === 'string' && projectId.includes('staging');
+  return isStaging ? 'https://test.iplanx.com' : 'https://iplanx.com';
+}
+
+/**
  * Handle URL redirection based on a short shortened path.
  * Increments the access count and redirects to the original URL.
+ * Redirects root (/) and unknown paths to the main website.
  */
 export const redirectUrl = onRequest(async (req, res) => {
   // Extract shortPath from the path (e.g., /my-path -> my-path)
@@ -68,7 +79,8 @@ export const redirectUrl = onRequest(async (req, res) => {
   const shortPath = pathParts[pathParts.length - 1];
 
   if (!shortPath) {
-    res.status(400).send('Bad Request: Missing path identifier.');
+    logger.info('Root path accessed, redirecting to main website.');
+    res.redirect(302, getMainWebsiteUrl());
     return;
   }
 
@@ -79,8 +91,8 @@ export const redirectUrl = onRequest(async (req, res) => {
     const docSnap = await redirectRef.get();
 
     if (!docSnap.exists) {
-      logger.info(`Redirect not found for path: ${shortPath}`);
-      res.status(404).send('Not Found: The shortened URL does not exist.');
+      logger.info(`Redirect not found for path: ${shortPath}, redirecting to main website.`);
+      res.redirect(302, getMainWebsiteUrl());
       return;
     }
 
@@ -105,7 +117,7 @@ export const redirectUrl = onRequest(async (req, res) => {
     res.redirect(302, originalUrl);
   } catch (error) {
     logger.error('Error processing redirect:', error);
-    res.status(500).send('Internal Server Error');
+    res.redirect(302, getMainWebsiteUrl());
   }
 });
 

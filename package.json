@@ -9,6 +9,8 @@
   "scripts": {
     "emulator": "firebase emulators:start --import=.firebase-local --export-on-exit",
     "emulator:functions": "firebase emulators:start --only functions",
+    "test": "yarn workspace functions test",
+    "functions:test": "yarn workspace functions test",
     "functions:build": "yarn workspace functions build",
     "functions:lint": "yarn workspace functions lint",
     "functions:shell": "yarn workspace functions shell",

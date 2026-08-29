@@ -124,6 +124,38 @@ describe("URL Redirection System E2E", () => {
   });
 
   describe("redirectUrl", () => {
+    it("should redirect root path (/) to main website", async () => {
+      const {redirectUrl} = require("../src/index");
+      const req = {
+        path: "/",
+        query: {},
+      };
+      const res = {
+        redirect: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+        send: jest.fn(),
+      };
+
+      await redirectUrl(req as any, res as any);
+      expect(res.redirect).toHaveBeenCalledWith(302, "https://iplanx.com");
+    });
+
+    it("should redirect non-existent short path to main website", async () => {
+      const {redirectUrl} = require("../src/index");
+      const req = {
+        path: "/non-existent-slug-xyz",
+        query: {},
+      };
+      const res = {
+        redirect: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+        send: jest.fn(),
+      };
+
+      await redirectUrl(req as any, res as any);
+      expect(res.redirect).toHaveBeenCalledWith(302, "https://iplanx.com");
+    });
+
     it("should redirect and increment count", async () => {
       const {redirectUrl} = require("../src/index");
 

@@ -1,6 +1,6 @@
-# iurl.me Link Manager (iurlx)
+# iplanx.link Link Redirection & Manager (iurlx)
 
-A modern, high-performance monorepo for managing dynamic shortened URL redirects with a premium React management dashboard, integrated Firebase Cloud Functions, and optimized Firestore security controls.
+A modern, high-performance service for managing dynamic shortened URL redirects (`iplanx.link` & `test.iplanx.link`) with integrated Firebase Cloud Functions and optimized Firestore security controls. Root and unknown path requests automatically redirect to the primary `iplanx.com` / `test.iplanx.com` portal.
 
 ---
 
