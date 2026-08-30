@@ -8,11 +8,10 @@
   "hosting": [
     {
       "site": "iurlx-staging",
-      "public": "app/build",
+      "public": "public",
       "ignore": [
         "firebase.json",
-        "**/.*",
-        "**/node_modules/**"
+        "**/.*"
       ],
       "rewrites": [
         {
@@ -23,11 +22,10 @@
     },
     {
       "site": "ilinkx",
-      "public": "app/build",
+      "public": "public",
       "ignore": [
         "firebase.json",
-        "**/.*",
-        "**/node_modules/**"
+        "**/.*"
       ],
       "rewrites": [
         {
