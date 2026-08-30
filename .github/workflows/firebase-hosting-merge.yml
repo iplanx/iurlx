@@ -21,4 +21,4 @@ jobs:
           credentials_json: ${{ github.ref_name == 'prod' && secrets.FIREBASE_SERVICE_ACCOUNT_IPLANX_BB47F || secrets.FIREBASE_SERVICE_ACCOUNT_IPLANX_STAGING }}
       - name: Deploy to Firebase (Functions & Hosting)
         run: |
-          npx firebase deploy --only functions,hosting:${{ github.ref_name == 'prod' && 'ilinkx' || 'iurlx-staging' }} --project ${{ github.ref_name == 'prod' && 'iplanx-bb47f' || 'iplanx-staging' }} --non-interactive
+          npx --yes firebase-tools deploy --only functions,hosting:${{ github.ref_name == 'prod' && 'ilinkx' || 'iurlx-staging' }} --project ${{ github.ref_name == 'prod' && 'iplanx-bb47f' || 'iplanx-staging' }} --non-interactive

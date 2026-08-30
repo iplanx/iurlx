@@ -25,6 +25,7 @@
     "lint": "yarn workspace iurlx lint && yarn workspace functions lint"
   },
   "devDependencies": {
+    "firebase-tools": "^13.31.0",
     "prettier": "^3.2.5"
   }
 }
